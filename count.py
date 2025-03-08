@@ -11,8 +11,11 @@ class Scheduler():
         self.ready.append(func)
 
     def call_later(self, delay, func):
-        time.sleep(delay)
-        self.ready.append(func)
+        if delay > 0:
+            time.sleep(1)
+            self.ready.append(lambda: self.call_later(delay - 1, func))
+        else:
+            self.ready.append(func)
 
     def run(self):
         while self.ready:
