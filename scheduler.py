@@ -4,7 +4,7 @@ import time
 from collections import deque
 
 
-class Scheduler():
+class Scheduler:
     def __init__(self):
         self.ready = deque()  # Functions ready to execute
 
