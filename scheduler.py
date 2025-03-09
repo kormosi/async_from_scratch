@@ -11,17 +11,22 @@ class Scheduler():
     def call_soon(self, func):  # Also could be called `def schedule"
         self.ready.append(func)
         self.sleeping = []
+        # A tie-braking mechanism to resolve cases where two co-routines would get
+        # scheduled with the same deadline (we would get a TypeError, because we cannot
+        # compare two functions).
+        self.sequence = 0
 
     # My somewhat functioning implementation
     def call_later(self, delay, func):
+        self.sequence += 1
         deadline = time.time() + delay
-        heapq.heappush(self.sleeping, (deadline, func))
+        heapq.heappush(self.sleeping, (deadline, self.sequence, func))
 
     def run(self):
         while self.ready or self.sleeping:
             if not self.ready:
                 # Find the nearest deadline
-                deadline, func = heapq.heappop(self.sleeping)
+                deadline, _, func = heapq.heappop(self.sleeping)
                 delta = deadline - time.time()
                 if delta > 0:
                     time.sleep(delta)
