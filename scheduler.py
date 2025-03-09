@@ -1,3 +1,4 @@
+import heapq
 import time
 
 from collections import deque
@@ -14,14 +15,13 @@ class Scheduler():
     # My somewhat functioning implementation
     def call_later(self, delay, func):
         deadline = time.time() + delay
-        self.sleeping.append((deadline, func))
-        self.sleeping.sort()  # Sort by closest deadline
+        heapq.heappush(self.sleeping, (deadline, func))
 
     def run(self):
         while self.ready or self.sleeping:
             if not self.ready:
                 # Find the nearest deadline
-                deadline, func = self.sleeping.pop(0)
+                deadline, func = heapq.heappop(self.sleeping)
                 delta = deadline - time.time()
                 if delta > 0:
                     time.sleep(delta)
