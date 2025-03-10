@@ -7,14 +7,14 @@ from collections import deque
 class Scheduler:
     def __init__(self):
         self.ready = deque()  # Functions ready to execute
-
-    def call_soon(self, func):  # Also could be called `def schedule"
-        self.ready.append(func)
         self.sleeping = []
         # A tie-braking mechanism to resolve cases where two co-routines would get
         # scheduled with the same deadline (we would get a TypeError, because we cannot
         # compare two functions).
         self.sequence = 0
+
+    def call_soon(self, func):  # Also could be called `def schedule"
+        self.ready.append(func)
 
     # My somewhat functioning implementation
     def call_later(self, delay, func):
