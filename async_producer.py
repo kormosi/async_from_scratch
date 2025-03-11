@@ -15,7 +15,6 @@ class Scheduler:
     def call_soon(self, func):  # Also could be called `def schedule"
         self.ready.append(func)
 
-    # My somewhat functioning implementation
     def call_later(self, delay, func):
         self.sequence += 1
         deadline = time.time() + delay
@@ -37,6 +36,7 @@ class Scheduler:
 
 scheduler = Scheduler()
 
+
 class AsyncQueue:
     def __init__(self):
         self.items = deque()
@@ -55,24 +55,32 @@ class AsyncQueue:
         else:
             self.waiting.append(lambda: self.get(callback))
 
+
 def producer(q, count):
-    for n in range(count):
-        print("Producing", n)
-        q.put(n)
-        time.sleep(1)
-    print("Producer done")
-    q.put(None)  # "Sentinel" to shut down
+    def _run(n):
+        if n < count:
+            print("Producing", n)
+            q.put(n)
+            scheduler.call_later(1, lambda: _run(n + 1))
+        else:
+            print("Producer done")
+            q.put(None)  # "Sentinel" to shut down
+
+    _run(0)
 
 
 def consumer(q):
-    while True:
-        item = q.get()
+    def _consume(item):
         if item is None:
-            break
-        print("Consuming", item)
-    print("Consumer done")
+            print("Consumer done")
+        else:
+            print("Consuming", item)
+            scheduler.call_soon(lambda: consumer(q))
+
+    q.get(callback=_consume)
 
 
-q = queue.Queue()  # Thread-safe queue
-threading.Thread(target=producer, args=(q, 10)).start()
-threading.Thread(target=consumer, args=(q,)).start()
+q = AsyncQueue()
+scheduler.call_soon(lambda: producer(q, 10))
+scheduler.call_soon(lambda: consumer(q))
+scheduler.run()
