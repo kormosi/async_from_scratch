@@ -34,9 +34,6 @@ class Scheduler:
                 func()
 
 
-scheduler = Scheduler()
-
-
 class AsyncQueue:
     def __init__(self):
         self.items = deque()
@@ -54,6 +51,9 @@ class AsyncQueue:
             callback(self.items.popleft())
         else:
             self.waiting.append(lambda: self.get(callback))
+
+
+scheduler = Scheduler()
 
 
 def producer(q, count):
