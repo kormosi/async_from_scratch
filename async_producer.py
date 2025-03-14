@@ -3,11 +3,11 @@ import heapq
 from collections import deque
 
 
-class Result():
+class Result:
     def __init__(self, value=None, exception=None):
         self.value = value
         self.exception = exception
-        
+
     def result(self):
         if self.exception:
             raise self.exception
@@ -45,15 +45,17 @@ class Scheduler:
                 func = self.ready.popleft()
                 func()
 
+
 class QueueClosed(Exception):
     pass
+
 
 class AsyncQueue:
     def __init__(self):
         self.items = deque()
         self.waiting = deque()  # All getters waiting for data
         self._closed = False  # Can queue be used?
-        
+
     def close(self):
         self._closed = True
         if self.waiting and not self.items:
@@ -90,6 +92,7 @@ def producer(q, count):
         else:
             print("Producer done")
             q.close()
+
     _run(0)
 
 
@@ -101,11 +104,11 @@ def consumer(q):
             scheduler.call_soon(lambda: consumer(q))
         except QueueClosed:
             print("Consumer done")
-            
+
     q.get(callback=_consume)
 
 
 q = AsyncQueue()
-scheduler.call_soon(lambda: producer(q, 10))
+scheduler.call_soon(lambda: producer(q, 3))
 scheduler.call_soon(lambda: consumer(q))
 scheduler.run()
