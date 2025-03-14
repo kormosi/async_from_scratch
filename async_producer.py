@@ -3,6 +3,18 @@ import heapq
 from collections import deque
 
 
+class Result():
+    def __init__(self, value=None, exception=None):
+        self.value = value
+        self.exception = exception
+        
+    def result(self):
+        if self.exception:
+            raise self.exception
+        else:
+            return self.value
+
+
 class Scheduler:
     def __init__(self):
         self.ready = deque()  # Functions ready to execute
@@ -33,13 +45,24 @@ class Scheduler:
                 func = self.ready.popleft()
                 func()
 
+class QueueClosed(Exception):
+    pass
 
 class AsyncQueue:
     def __init__(self):
         self.items = deque()
         self.waiting = deque()  # All getters waiting for data
+        self._closed = False  # Can queue be used?
+        
+    def close(self):
+        self._closed = True
+        if self.waiting and not self.items:
+            for func in self.waiting:
+                scheduler.call_soon(func)
 
     def put(self, item):
+        if self._closed:
+            raise QueueClosed()
         self.items.append(item)
         if self.waiting:
             func = self.waiting.popleft()
@@ -48,8 +71,10 @@ class AsyncQueue:
     def get(self, callback):
         # Wait until an item is available, then return it
         if self.items:
-            callback(self.items.popleft())
+            callback(Result(value=self.items.popleft()))  # Good result
         else:
+            if self._closed:
+                callback(Result(exception=QueueClosed()))  # Bad result
             self.waiting.append(lambda: self.get(callback))
 
 
@@ -64,19 +89,19 @@ def producer(q, count):
             scheduler.call_later(1, lambda: _run(n + 1))
         else:
             print("Producer done")
-            q.put(None)  # "Sentinel" to shut down
-
+            q.close()
     _run(0)
 
 
 def consumer(q):
-    def _consume(item):
-        if item is None:
-            print("Consumer done")
-        else:
+    def _consume(result):
+        try:
+            item = result.result()
             print("Consuming", item)
             scheduler.call_soon(lambda: consumer(q))
-
+        except QueueClosed:
+            print("Consumer done")
+            
     q.get(callback=_consume)
 
 
